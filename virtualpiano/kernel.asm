@@ -5,7 +5,7 @@ jmp start
 
 .data:
     title db "Pianito Virtualito!", 13, 10, 0
-    a db "voce pressionou a letra A.", 13, 10, 0
+
 _putchar:
     mov ah, 0xe
     int 10h
