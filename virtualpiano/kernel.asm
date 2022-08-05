@@ -22,6 +22,9 @@ _print:
     .fim:
 	ret                
 
+    ;;this part of the code is totally based on a project previously done by another group, which simulates a Realmode OS
+    ;;special thanks to the guys of github.com/gbrls/Bootloader and Teaching Assistent JP de Assembly! 
+
     noteon:
         ; change frequency
         mov dx, ax						; dx hold the ax value (midi note value)
@@ -55,39 +58,68 @@ getfreq:
     cmp al, 'a' ;c
     je _a
 
+    cmp al, 'A' ;c
+    je _A
+
     cmp al, 'w' ;c#
     je _w
 
+    cmp al, 'W' ;c#
+    je _W 
+
     cmp al, 's' ;d
     je _s
+    cmp al, 'S'
+    je _S
 
     cmp al, 'e' ;d#
     je _e
 
+    cmp al, 'E'
+    je _E
+
     cmp al, 'd' ;e
     je _d
+    cmp al, 'D'
+    je _D
 
     cmp al, 'f' ;f
     je _f
 
+    cmp al, 'F'
+    je _F
+
     cmp al, 't' ;f#
     je _t
+
+    cmp al, 'T'
+    je _T
 
 
     cmp al, 'g' ;g
     je _g
+    cmp al, 'G'
+    je _G
 
     cmp al, 'y' ;g#
     je _y
+    cmp al, 'Y'
+    je _Y
 
     cmp al, 'h';a
     je _h
+    cmp al, 'H'
+    je _H
 
     cmp al, 'u';a#
     je _u
+    cmp al, 'U'
+    je _U
 
     cmp al, 'j';b
     je _j
+    cmp al, 'J'
+    je _J
 
     cmp al, 1bh
     je _exit
@@ -97,48 +129,90 @@ _a: ;c ok
     mov ah, 23h
     ret
 
+_A:
+    mov ah, 46h
+    ret
+
 _w:;c# ok 
     mov ah, 21h
+    ret
+
+_W:
+    mov ah, 42h
     ret
 
 _s:;d ok
     mov ah, 1fh
     ret
 
+_S:
+    mov ah, 3fh
+    ret
+
 _e:;d#
     mov ah, 1dh
     ret
 
+_E:
+    mov ah, 3ah
+    ret
+
 _d:;e ok
     mov ah, 1ch 
+    ret
+_D:
+    mov ah,  38h
     ret
 
 _f:;f ok
     mov ah, 1Ah
     ret
 
+_F:
+    mov ah, 36h
+    ret
+
 _t:; f# ok
     mov ah, 19h
+    ret
+_T:
+    mov ah, 33h
     ret
 
 _g:;g
     mov ah, 17h
     ret
 
+_G:
+    mov ah, 2Fh
+    ret
+
 _y:;g#
     mov ah, 16h
+    ret
+_Y:
+    mov ah, 2Ch
     ret
 
 _h:;a
     mov ah, 15h
     ret
+_H:
+    mov ah, 2Ah
+    ret
 
 _u:;a#
     mov ah, 14h
     ret
+_U:
+    mov ah, 28h
+    ret
 
 _j:;b
     mov ah, 13h
+    ret
+_J:
+    mov ah, 26h
     ret
 
 _exit:
