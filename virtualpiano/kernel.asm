@@ -1,243 +1,238 @@
-org 0x7E00
-jmp 0x0000:start
+org 0x7e00
 
-jmp start
+jmp main
 
-.data:
-    title db "Pianito Virtualito!", 13, 10, 0
+%include "consts.asm"
+%include "prints.asm"
+%include "inputs.asm"
+%include "pianito.asm"
+%include "config.asm"
+%include "tutorial_mode.asm"
+%include "songs.asm"
 
-_putchar:
-    mov ah, 0xe
-    int 10h
-    ret
+_data:
 
-_print:                    
-    .loop1:       
-    	lodsb	           
-	cmp al, 0          
-	je .fim		   
-	call _putchar      
-	jmp .loop1         
 	
-    .fim:
-	ret                
+	m_title1 db 'PIANITO', 0
+	m_title2 db 'VIRTUALITO!', 0
+    m_msg db 'Pressione Enter para comecar', 0
+    m_op1 db 'Modo Tutorial', 0
+    m_op2 db 'Modo Livre', 0
+	m_op3 db 'Opcoes de cores', 0
+    m_op4 db 'Sair', 0
+	
+	e_msg db 'Eh so clicar nesse X aqui em cima po', 0
 
-    ;;this part of the code is totally based on a project previously done by another group, which simulates a Realmode OS
-    ;;special thanks to the guys of github.com/gbrls/Bootloader and Teaching Assistent JP de Assembly! 
+	options dw m_op1, m_op2, m_op3, m_op4
 
-    noteon:
-        ; change frequency
-        mov dx, ax						; dx hold the ax value (midi note value)
-        mov al, 0b6h					; this is the number the 43h port is waiting to recieve to be activated and to wait for 2 bytes (wich will tell what frequence to play)
-        out 43h, al						; we output the al value to the pcspeaker (sound device) oscillator port (43h is the port where we say what oscillator we want to use). 
-        mov ax, dx						; ax gets the midi note value
-        out 42h, al						; sends the first byte of the frequence to the oscillator frequence port(ax low byte)
-        mov al, ah						; holds the ax high byte in the ax low bite register, so we can send it to the oscillator
-        out 42h, al						; sends the second byte of the frequence to the oscillator frequence port(ax high byte)
+	var db 0
+	
 
-        ; starts the sound
-        in al, 61h						; reads the 61h port (to clean it from what it had)	
-        or al, 3h						; sets the last 2 bits are 1 (which means to turn the PCSPEAKER on)
-        out 61h, al						; turns on the PCSPEAKER SPEAKER
-        ret
-            
-    ; stop the sound
-    noteoff:
-        in al, 61h						; al is the input and 61h is the port number.
-        and al, 0fch					; sets the al to 0fch (wich means to turn the PCSPEAKER off)
-        out 61h, al			
-        ret
+;-----------------------------------------------------------------------------
 
+;=======================================================================
+main:
 
+	call clear_regs
 
-getfreq:
+    call menu_screen
+	
+	jmp _fim
 
-    mov ah, 00h ;read key press 
-    int 16h
-    
-    cmp al, 'a' ;c
-    je _a
+;------------------------------------------
 
-    cmp al, 'A' ;c
-    je _A
+menu_screen:
+	call clear_screen
+	call set_video
+	set_background_color background_color
+    printf_s m_title1, 3, 15, title_color
+	printf_s m_title2, 5, 13, title_color
 
-    cmp al, 'w' ;c#
-    je _w
+	.waiting:
 
-    cmp al, 'W' ;c#
-    je _W 
-
-    cmp al, 's' ;d
-    je _s
-    cmp al, 'S'
-    je _S
-
-    cmp al, 'e' ;d#
-    je _e
-
-    cmp al, 'E'
-    je _E
-
-    cmp al, 'd' ;e
-    je _d
-    cmp al, 'D'
-    je _D
-
-    cmp al, 'f' ;f
-    je _f
-
-    cmp al, 'F'
-    je _F
-
-    cmp al, 't' ;f#
-    je _t
-
-    cmp al, 'T'
-    je _T
+		mov cx, 400
+		.turna:
+			printf_s m_msg, 9, 6, sub_option_color
+			if_pressed enter_key, .op_screen
+			loop .turna
+		mov cx, 400
+		.turnb:
+			printf_s m_msg, 9, 6, background_color
+			if_pressed enter_key, .op_screen
+			loop .turnb
+		jmp .waiting
 
 
-    cmp al, 'g' ;g
-    je _g
-    cmp al, 'G'
-    je _G
+	
+	.op_screen:
+		call clear_screen
+		printf_s m_title1, 3, 15, title_color
+		printf_s m_title2, 5, 13, title_color
 
-    cmp al, 'y' ;g#
-    je _y
-    cmp al, 'Y'
-    je _Y
+		mov byte[var], 1
+		.repeat:
 
-    cmp al, 'h';a
-    je _h
-    cmp al, 'H'
-    je _H
+			mov cx, menu_num_op
+			mov ah, 0
 
-    cmp al, 'u';a#
-    je _u
-    cmp al, 'U'
-    je _U
+			.count:
+				mov si, options
+				mov al, 2
+				mul cl
+				add si, ax
+				sub si, 2
+				add al, 7
+				
+				cmp cl, byte[var]
+				je .op_chosen
+				printf_s [si], al, 13, main_option_color
+				loop .count
+			jmp .check_input
+		
+			.op_chosen:
 
-    cmp al, 'j';b
-    je _j
-    cmp al, 'J'
-    je _J
+				printf_s [si], al, 13, chosen_option_color
+				loop .count
+			
+			.check_input:
 
-    cmp al, 1bh
-    je _exit
-    jmp notes
+				call getchar
+				cmp al, 's'
+				je .down
+				cmp al, 'w'
+				je .up
+				cmp al, enter_key
+				jne .repeat
 
-_a: ;c ok
-    mov ah, 23h
-    ret
+			.choose_op:
+				pusha
 
-_A:
-    mov ah, 46h
-    ret
+				cmp byte[var], 1
+				je .op1
+				cmp byte[var], 2
+				je .op2
+				cmp byte[var], 3
+				je .op3
+				cmp byte[var], 4
+				je .op4
+				jmp .op_screen
 
-_w:;c# ok 
-    mov ah, 21h
-    ret
+			.op1:
+				call clear_screen
+				call tutorial_mode
+				popa
+				jmp menu_screen
+			
+			.op2:
+				call clear_screen
+				call start
+				popa
+				jmp menu_screen
 
-_W:
-    mov ah, 42h
-    ret
+			.op3:
+				call config
+				popa
+				jmp menu_screen
 
-_s:;d ok
-    mov ah, 1fh
-    ret
+			.op4:
+				call clear_screen
+				call exit_screen
+				popa
+				jmp menu_screen
 
-_S:
-    mov ah, 3fh
-    ret
 
-_e:;d#
-    mov ah, 1dh
-    ret
+			.up:
+				cmp byte[var], 1
+				jbe .repeat
+				dec byte[var]
+				jmp .repeat
 
-_E:
-    mov ah, 3ah
-    ret
-
-_d:;e ok
-    mov ah, 1ch 
-    ret
-_D:
-    mov ah,  38h
-    ret
-
-_f:;f ok
-    mov ah, 1Ah
-    ret
-
-_F:
-    mov ah, 36h
-    ret
-
-_t:; f# ok
-    mov ah, 19h
-    ret
-_T:
-    mov ah, 33h
-    ret
-
-_g:;g
-    mov ah, 17h
-    ret
-
-_G:
-    mov ah, 2Fh
-    ret
-
-_y:;g#
-    mov ah, 16h
-    ret
-_Y:
-    mov ah, 2Ch
-    ret
-
-_h:;a
-    mov ah, 15h
-    ret
-_H:
-    mov ah, 2Ah
-    ret
-
-_u:;a#
-    mov ah, 14h
-    ret
-_U:
-    mov ah, 28h
-    ret
-
-_j:;b
-    mov ah, 13h
-    ret
-_J:
-    mov ah, 26h
-    ret
-
-_exit:
-    int 20h
+			.down:
+				cmp byte[var], menu_num_op
+				jae .repeat
+				inc byte[var]
+				jmp .repeat
 
 
 
-start:
+ret
 
-mov si, title
-call _print
+exit_screen:
+	
+	printf_s e_msg, 1, 3, color_red
+	call getchar
+	cmp al, esc_key
+	jne exit_screen
 
-notes:
-
-mov si, 0h
-
-call getfreq
-call noteon
-mov ah, 86h
-mov cx, 2h
-mov dx, 5h
-int 15h ;; delay
-call noteoff
-jmp notes
+ret
 
 
-times 510-($-$$) db 0
+printstring_caps:
+	cld										; determina que lodsb incrementa o ponteiro
+	.while:
+		lodsb
+		cmp al, 0
+		je .end								; finaliza o print ao chegar em 0
+		cmp al, 'a'
+		jb .print
+		cmp al, 'z'
+		ja .print							; se o caractere não estiver entre 'a' e 'z', deve ser printado normalmente
+		sub al, 32							; transforma a letra minúscula em maiúscula
+		jmp .print
+		
+	.print:
+		call printchar
+		jmp .while
+		
+	.end:
+ret
+
+
+deletechar:
+	mov al, 8
+	call printchar
+	mov al, ''
+	call printchar
+	mov al, 8
+	call printchar
+ret
+
+
+newline:
+	mov al, 10
+	call printchar								; insere o line feed/quebra de linha (cod. ASCII = 10)	
+	mov al, 13
+	call printchar								; insere o carriage return (cod. ASCII = 13)
+ret
+
+
+
+clear_regs:
+
+	xor ax, ax
+	mov ds, ax
+	mov es, ax
+	mov si, ax
+	mov di, ax
+	mov bx, ax
+	mov cx, ax
+	mov dx, ax
+
+ret
+
+
+set_video:
+	mov ah, 0h
+	mov al, 0Dh
+	int 10h
+ret
+
+
+;------------------------------------------ 
+
+
+_fim:
+	jmp $
+
+;times 5100 -($-$$) db 0
 dw 0xaa55
